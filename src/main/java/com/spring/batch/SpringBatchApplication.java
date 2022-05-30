@@ -14,6 +14,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
+import java.util.concurrent.TimeoutException;
+
 /**
  * packageName    : com.spring.batch
  * fileName       : SpringBatchApplication
@@ -37,13 +39,37 @@ public class SpringBatchApplication {
 
     @Bean
     public Job delivePackageJob(){
-        return this.jobBuilderFactory.get("delivePackageJob").start(packageItemStep()).build();
+        return this.jobBuilderFactory.get("delivePackageJob")
+                .start(packageItemStep())
+                .next(driveToAddressStep())
+                .next(givePackageToCustomerStep())
+                .build();
     }
 
     @Bean
     public Step packageItemStep() {
         return this.stepBuilderFactory.get("packgeItemStep").tasklet((stepContribution, chunkContext) -> {
-            System.out.println("the item has been packaged");
+            var item = chunkContext.getStepContext().getJobParameters().get("item").toString();
+            var date = chunkContext.getStepContext().getJobParameters().get("run.date").toString();
+            System.out.println(">>>>>> 1. >>>>>> packageItemStep : "+item+" | "+date);
+            return RepeatStatus.FINISHED;
+        }).build();
+    }
+
+    @Bean
+    public Step driveToAddressStep(){
+//        boolean exp = true;
+        return this.stepBuilderFactory.get("driveToAddress").tasklet((stepContribution, chunkContext) -> {
+//            if(exp) throw new RuntimeException("Got lost driving to the address");
+            System.out.println(">>>>>> 2. >>>>>> driveToAddressStep");
+            return RepeatStatus.FINISHED;
+        }).build();
+    }
+
+    @Bean
+    public Step givePackageToCustomerStep(){
+        return this.stepBuilderFactory.get("givePackageToCustomer").tasklet((stepContribution, chunkContext) -> {
+            System.out.println(">>>>>> 3. >>>>>> givePackageToCustomerStep");
             return RepeatStatus.FINISHED;
         }).build();
     }
